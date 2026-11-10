@@ -164,11 +164,16 @@ body{
 @keyframes shine{to{transform:rotate(360deg)}}
 .back.ontime .bnote{background:#fff;color:#c2410c}
 .back.ontime .txt{color:#7c3d00}
-/* ちょっと おそかった＝ぎん（きびしいモードのときだけ） */
+/* じかんは すぎたけど できた＝ぎん（「間に合った／遅れた」のときだけ） */
 .back.late{background:radial-gradient(circle at 50% 38%,#f7fafc,#cbd8e2 62%,#aabecd);border-color:#fff}
 .back.late .txt{color:#3f5a6d}
 .back.late .bsub{color:#5d7b8e}
-.back.late .bnote{background:#ffffffcc;color:#5d7b8e}
+.back.late .bnote{background:#ffffffcc;color:#5d7b8e;margin-top:0;margin-bottom:3px}
+/* 上から読むと「じかんは すぎたけど できた！」の 1文になるように 入れかえる */
+.back.late .seal{order:1}
+.back.late .bnote{order:2}
+.back.late .txt{order:3}
+.back.late .bsub{order:4}
 
 /* iPhone の Safari では backface-visibility が きかず、
    めくったカードの「表」が 鏡文字のまま 裏に重なって見えることがある。
@@ -1149,7 +1154,7 @@ function backStyle(id){
   var r = state.done.tim[id];
   if(r === true)  return { cls:" ontime", note:"⏰ じかんどおり！" };
   if(r === false && state.timing.mode === "strict")
-    return { cls:" late", note:"ちょっと おそかったね" };
+    return { cls:" late", note:"じかんは すぎたけど" };
   return { cls:"", note:"" };
 }
 
