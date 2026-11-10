@@ -51,13 +51,23 @@ body{
   flex:none;border:none;background:none;padding:0;cursor:pointer;border-radius:50%}
 .now .nclock:active{transform:scale(.95)}
 .nmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.nrow{display:flex;align-items:center;gap:6px;min-width:0}
+.nrow{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;row-gap:2px}
 .now .nlabel{font-size:12px;font-weight:700;color:#8b99a2;letter-spacing:.08em;flex:none}
 .now .nread{font-size:clamp(22px,3.9vw,38px);font-weight:800;line-height:1.15;white-space:nowrap}
 .now .nread .tw{font-size:.62em;color:#7b8992;margin-right:.18em}
-.now .ndate{text-align:right;white-space:nowrap;
+.now .ndate{text-align:right;white-space:nowrap;margin-left:auto;
   font-size:clamp(19px,3.2vw,32px);font-weight:800;color:#5a6b76;line-height:1.2}
 .now .ndate .dw{font-size:.72em;color:#8b99a2;margin-left:.15em}
+/* スマホの はば では ヘッダーを 一回り小さくする。
+   それでも入らないときは 日づけが 下の行に まわる（切れて消えないように） */
+@media (max-width:430px){
+  .now{gap:9px;padding:7px 10px}
+  .now .nclock{width:64px;height:64px}
+  .iconbtn{width:38px;height:38px;font-size:17px;border-radius:10px}
+  .title{font-size:14px}
+  .now .nread{font-size:21px}
+  .now .ndate{font-size:16px}
+}
 
 /* ===== タブ ===== */
 .tabs{display:flex;gap:8px;flex:none}
@@ -159,6 +169,16 @@ body{
 .back.late .txt{color:#3f5a6d}
 .back.late .bsub{color:#5d7b8e}
 .back.late .bnote{background:#ffffffcc;color:#5d7b8e}
+
+/* iPhone の Safari では backface-visibility が きかず、
+   めくったカードの「表」が 鏡文字のまま 裏に重なって見えることがある。
+   そこで カードが 真横を向く瞬間（0.27秒後）に showback を付け外しして、
+   どの端末でも かならず 片面だけが 見えるようにする（付け外しは JS の flipFace）。
+   CSS の遅延に頼らないのは、画面が止まっている端末で 途中のまま 固まるのを避けるため */
+.front{opacity:1}
+.back{opacity:0}
+.card.showback .front{opacity:0;pointer-events:none}
+.card.showback .back{opacity:1}
 
 .card:active .inner{transform:scale(.96)}
 .card.done:active .inner{transform:rotateY(180deg) scale(.96)}
@@ -508,7 +528,7 @@ body{
         <div class="spacer"></div>
         <button class="iconbtn" id="soundBtn" title="おと">🔔</button>
         <button class="iconbtn add" id="quickBtn" title="きょうだけの よていを ふやす">＋</button>
-        <button class="iconbtn" id="gearBtn" title="おとなメニュー（ながおし）">⚙️</button>
+        <button class="iconbtn" id="gearBtn" title="大人メニュー（長押し）">⚙️</button>
         <button class="iconbtn fs" id="fsBtn" title="ぜんがめん">⛶</button>
       </div>
       <div class="nrow">
@@ -664,13 +684,13 @@ body{
 <!-- はい／やめる の かくにん（ブラウザの confirm は 使えない場所があるため 自前で用意） -->
 <div class="askpop" id="iopop">
   <div class="askbox iobox">
-    <h3>📋 設定の 書き出し／読み込み</h3>
-    <p>この文字のかたまりが、いまのおなまえと いつものよていです。<br>
-      べつの端末に移すときは、コピーして 向こうで貼り付けて「読み込む」を押してください。</p>
+    <h3>📋 設定の書き出し／読み込み</h3>
+    <p>この文字のかたまりが、今のお名前と いつもの予定です。<br>
+      別の端末に移すときは、コピーして向こうで貼り付け、「読み込む」を押してください。</p>
     <textarea id="ioText" spellcheck="false" autocomplete="off"></textarea>
     <p class="iomsg" id="ioMsg"></p>
     <div class="qactions">
-      <button class="btn" id="ioClose">とじる</button>
+      <button class="btn" id="ioClose">閉じる</button>
       <button class="btn" id="ioCopy">コピー</button>
       <button class="btn blue wide" id="ioLoad">読み込む</button>
     </div>
@@ -690,11 +710,11 @@ body{
 <!-- おとなメニュー -->
 <div class="sheetmodal" id="modal">
   <div class="panel">
-    <h2>おとなメニュー</h2>
+    <h2>大人メニュー</h2>
 
     <div class="mode">
-      <button data-mode="base">いつもの よてい</button>
-      <button data-mode="day" class="on">この日だけ かえる</button>
+      <button data-mode="base">いつもの予定</button>
+      <button data-mode="day" class="on">この日だけ変更</button>
     </div>
 
     <div class="datebar" id="datebar" style="display:none">
@@ -705,17 +725,17 @@ body{
 
     <p class="hint" id="hintBase">
       時刻は <b>24時間</b> で入れてください（例：19:00）。カードには時計と「よるの 7じ」の読みで出ます。<br>
-      ことばの途中に スペースを入れると、そこで改行されます。<br>
-      曜日ボタンで「月・木だけ」のように出す日を選べます（ぜんぶ消灯＝まいにち）。
+      言葉の途中にスペースを入れると、そこで改行されます。<br>
+      曜日ボタンで「月・木だけ」のように出す日を選べます（全部消灯＝毎日）。
     </p>
     <p class="hint" id="hintDay" style="display:none">
-      <b>この日だけ</b> 時刻を変えたり、おやすみにしたり、よていを足したりできます。<br>
-      いつもの よていは そのままです。変更した項目には カードに 📌 が付きます。
+      <b>この日だけ</b>時刻を変えたり、お休みにしたり、予定を足したりできます。<br>
+      いつもの予定はそのままです。変更した項目にはカードに 📌 が付きます。
     </p>
 
     <div class="seg">
-      <button data-eslot="morning" class="on">☀️ あさ</button>
-      <button data-eslot="evening">🌙 よる</button>
+      <button data-eslot="morning" class="on">☀️ 朝</button>
+      <button data-eslot="evening">🌙 夜</button>
     </div>
 
     <div class="rows" id="rows"></div>
@@ -723,52 +743,52 @@ body{
     <div class="emopal" id="emopal"></div>
 
     <div class="actions" id="baseActions" style="margin-bottom:14px">
-      <button class="btn wide" id="addRow">＋ やることを ふやす</button>
-      <button class="btn" id="sortBtn">じかん順に ならべる</button>
-      <button class="btn" id="restoreBtn">さいしょの内容にもどす</button>
+      <button class="btn wide" id="addRow">＋ やることを追加</button>
+      <button class="btn" id="sortBtn">時刻順に並べる</button>
+      <button class="btn" id="restoreBtn">初期内容に戻す</button>
     </div>
 
     <div class="actions" id="dayActions" style="margin-bottom:14px;display:none">
-      <button class="btn blue wide" id="addDayRow">＋ この日だけ よていを ふやす</button>
-      <button class="btn" id="clearDay">この日の 変更を 消す</button>
+      <button class="btn blue wide" id="addDayRow">＋ この日だけの予定を追加</button>
+      <button class="btn" id="clearDay">この日の変更を消す</button>
     </div>
 
     <div class="setbox">
-      <div class="setlbl">⏰ じかんに まにあったときの えんしゅつ</div>
+      <div class="setlbl">⏰ 時刻に間に合ったときの演出</div>
       <div class="seg3" id="timingSeg">
-        <button data-tm="off">なし<br><small>いつも きんキラの「できた！」</small></button>
-        <button data-tm="bonus">まにあったら ごほうび<br><small>おくれても「できた！」は同じ</small></button>
-        <button data-tm="strict">まにあった／おそかった<br><small>きんシールと ぎんシールで分ける</small></button>
+        <button data-tm="off">なし<br><small>いつも金色の「できた！」</small></button>
+        <button data-tm="bonus">間に合ったらごほうび<br><small>遅れても「できた！」は同じ</small></button>
+        <button data-tm="strict">間に合った／遅れた<br><small>金シールと銀シールで分ける</small></button>
       </div>
       <label class="graceline" id="graceLine">
-        おくれても セーフに する じかん
+        遅れてもセーフにする時間
         <select id="graceSel">
           <option value="0">ちょうどまで</option>
-          <option value="3">3ふん すぎまで</option>
-          <option value="5">5ふん すぎまで</option>
-          <option value="10">10ぷん すぎまで</option>
-          <option value="15">15ふん すぎまで</option>
+          <option value="3">3分すぎまで</option>
+          <option value="5">5分すぎまで</option>
+          <option value="10">10分すぎまで</option>
+          <option value="15">15分すぎまで</option>
         </select>
       </label>
       <div class="setnote">
-        時刻を入れていないカードは、いつも ふつうの「できた！」になります。<br>
-        「まにあった」の判定は <b>カードを押した時刻</b> で決まります（あとから押すと おくれ扱い）。
+        時刻を入れていないカードは、いつも普通の「できた！」になります。<br>
+        「間に合った」の判定は<b>カードを押した時刻</b>で決まります（後から押すと遅れ扱い）。
       </div>
     </div>
 
-    <label class="nameline">おなまえ
+    <label class="nameline">お名前
       <input id="nameIn" maxlength="8" placeholder="たろう" autocomplete="off">
       <small>の できたよボード</small>
     </label>
-    <label class="toggle"><input type="checkbox" id="soundChk"> できたときに 音を鳴らす</label>
+    <label class="toggle"><input type="checkbox" id="soundChk"> できたときに音を鳴らす</label>
     <label class="toggle" style="margin-bottom:14px"><input type="checkbox" id="iconChk">
-      カードに 絵（アイコン）を 出す　<small>／ 消すと 時計だけの カードになります</small></label>
+      カードに絵（アイコン）を出す　<small>／ 消すと時計だけのカードになります</small></label>
 
     <div class="actions">
-      <button class="btn" id="resetBtn">きょうのシールを ぜんぶ戻す</button>
-      <button class="btn" id="ioBtn">📋 設定の 書き出し／読み込み</button>
-      <button class="btn" id="printBtn">🖨 マグネット用に 印刷する</button>
-      <button class="btn primary wide" id="closeBtn">とじる</button>
+      <button class="btn" id="resetBtn">今日のシールを全部戻す</button>
+      <button class="btn" id="ioBtn">📋 設定の書き出し／読み込み</button>
+      <button class="btn" id="printBtn">🖨 マグネット用に印刷する</button>
+      <button class="btn primary wide" id="closeBtn">閉じる</button>
     </div>
   </div>
 </div>
@@ -1158,7 +1178,7 @@ function render(){
   items.forEach(function(it, i){
     var tp = parseTime(it.t);
     var b = document.createElement("button");
-    b.className = "card" + (done.indexOf(it.id) >= 0 ? " done" : "");
+    b.className = "card" + (done.indexOf(it.id) >= 0 ? " done showback" : "");
     b.dataset.id = it.id;
     b.setAttribute("aria-label", (tp ? readFull(tp.h, tp.m) + " " : "") + oneLine(it.x));
     var tagHTML = it.only
@@ -1284,6 +1304,16 @@ function paintNow(){
 /* ===================================================================
    タップ
    =================================================================== */
+/* めくりの まんなかで 表と裏を 入れかえる。
+   backface-visibility が きかない端末（iPhone）でも 重なって見えないようにする */
+function flipFace(el, toBack){
+  if(el._flipT) clearTimeout(el._flipT);
+  el._flipT = setTimeout(function(){
+    el._flipT = null;
+    el.classList.toggle("showback", !!toBack);
+  }, 270);
+}
+
 function toggle(it, el){
   if(rolloverIfNeeded()){ render(); return; }
   var arr = state.done[slot], p = arr.indexOf(it.id), justDone = false, onTime = null;
@@ -1323,6 +1353,7 @@ function toggle(it, el){
     noteEl.textContent = bs.note;
   } else if(noteEl){ noteEl.remove(); }
   el.classList.toggle("done", justDone);
+  flipFace(el, justDone);
 
   renderProgress(items);
   markNext(items);
@@ -1969,12 +2000,12 @@ function renderBaseRows(){
         "<input class=\"i-em\" value=\"" + esc(it.e) + "\" maxlength=\"4\">" +
         "<input class=\"i-tm tmfield\" readonly inputmode=\"none\" value=\"" + esc(it.t) + "\" placeholder=\"19:00\">" +
         "<input class=\"i-tx\" value=\"" + esc(oneLine(it.x)) + "\" placeholder=\"やること\">" +
-        "<button class=\"mini up\" title=\"うえへ\">▲</button>" +
-        "<button class=\"mini dn\" title=\"したへ\">▼</button>" +
-        "<button class=\"mini del\" title=\"けす\">✕</button>" +
+        "<button class=\"mini up\" title=\"上へ\">▲</button>" +
+        "<button class=\"mini dn\" title=\"下へ\">▼</button>" +
+        "<button class=\"mini del\" title=\"消す\">✕</button>" +
       "</div>" +
       "<div class=\"dows\"><span class=\"dlbl\">出す曜日</span>" + dbtns +
-        "<button class=\"all\">まいにち</button></div>";
+        "<button class=\"all\">毎日</button></div>";
 
     r.querySelector(".i-em").addEventListener("focus", function(){ focusedEmojiInput = this; });
     r.querySelector(".up").addEventListener("click", function(){ move(i, -1); });
@@ -2022,7 +2053,7 @@ function renderDayRows(){
         "<span class=\"femo\">" + esc(it.e) + "</span>" +
         "<input class=\"i-tm tmfield\" readonly inputmode=\"none\" value=\"" + esc(cur) + "\" placeholder=\"19:00\">" +
         "<span class=\"fixed\">" + esc(oneLine(it.x)) + "</span>" +
-        "<button class=\"mini wide offb" + (isOff ? " on" : "") + "\">" + (isOff ? "おやすみ中" : "おやすみ") + "</button>" +
+        "<button class=\"mini wide offb" + (isOff ? " on" : "") + "\">" + (isOff ? "お休み中" : "お休み") + "</button>" +
       "</div>";
     r.querySelector(".offb").addEventListener("click", function(){
       commitRows();
@@ -2044,7 +2075,7 @@ function renderDayRows(){
       "<div class=\"rline\">" +
         "<input class=\"i-em\" value=\"" + esc(a.e) + "\" maxlength=\"4\">" +
         "<input class=\"i-tm tmfield\" readonly inputmode=\"none\" value=\"" + esc(a.t) + "\" placeholder=\"19:00\">" +
-        "<input class=\"i-tx\" value=\"" + esc(oneLine(a.x)) + "\" placeholder=\"この日だけの よてい\">" +
+        "<input class=\"i-tx\" value=\"" + esc(oneLine(a.x)) + "\" placeholder=\"この日だけの予定\">" +
         "<button class=\"mini del\">✕</button>" +
       "</div>";
     r.querySelector(".i-em").addEventListener("focus", function(){ focusedEmojiInput = this; });
@@ -2058,7 +2089,7 @@ function renderDayRows(){
   });
 
   if(!box.children.length){
-    box.innerHTML = "<div class=\"dnone\">この日の よていは ありません。</div>";
+    box.innerHTML = "<div class=\"dnone\">この日の予定はありません。</div>";
   }
   buildPalette();
 }
@@ -2139,7 +2170,7 @@ $("addDayRow").addEventListener("click", function(){
   if(last){ var inp = last.querySelector(".i-tx"); if(inp){ inp.focus(); inp.select(); } }
 });
 $("clearDay").addEventListener("click", function(){
-  ask(fmtDateJP(edate) + " の「この日だけ」の変更を ぜんぶ消します。よろしいですか？", function(){
+  ask(fmtDateJP(edate) + " の「この日だけ」の変更を全部消します。よろしいですか？", function(){
     if(state.ov[edate]) delete state.ov[edate][eslot];
     save(); renderRows();
   });
@@ -2192,20 +2223,20 @@ $("ioCopy").addEventListener("click", function(){
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(ta.value).then(
       function(){ ioMsg("コピーしました"); },
-      function(){ ioMsg("コピーできませんでした。指で選んで コピーしてください", true); }
+      function(){ ioMsg("コピーできませんでした。指で選んでコピーしてください", true); }
     );
     return;
   }
-  ioMsg("コピーできませんでした。指で選んで コピーしてください", true);
+  ioMsg("コピーできませんでした。指で選んでコピーしてください", true);
 });
 $("ioLoad").addEventListener("click", function(){
   var data;
   try{ data = JSON.parse($("ioText").value); }
-  catch(e){ ioMsg("読み取れませんでした。かたまり全部を 貼り付けてください", true); return; }
+  catch(e){ ioMsg("読み取れませんでした。かたまり全部を貼り付けてください", true); return; }
   if(!data || !data.items || !data.items.morning || !data.items.evening){
-    ioMsg("できたよボードの設定では ないみたいです", true); return;
+    ioMsg("できたよボードの設定では ないようです", true); return;
   }
-  ask("いまの「いつもの よてい」と おなまえを、貼り付けた内容に 入れかえます。よろしいですか？", function(){
+  ask("今の「いつもの予定」とお名前を、貼り付けた内容に入れ替えます。よろしいですか？", function(){
     $("iopop").classList.remove("show");
     state.items = clone(data.items);
     if(typeof data.name === "string")   state.name  = data.name.slice(0, 8);
@@ -2222,7 +2253,7 @@ $("ioLoad").addEventListener("click", function(){
 });
 
 $("restoreBtn").addEventListener("click", function(){
-  ask("「" + (eslot === "morning" ? "あさ" : "よる") + "」を さいしょの内容に もどします。よろしいですか？", function(){
+  ask("「" + (eslot === "morning" ? "朝" : "夜") + "」を初期内容に戻します。よろしいですか？", function(){
     state.items[eslot] = clone(DEFAULTS[eslot]);
     state.done[eslot] = [];
     ensureIds();
@@ -2277,7 +2308,7 @@ function canPrint(){
 }
 $("printBtn").addEventListener("click", function(){
   if(!canPrint()){
-    toast("このページでは 印刷できません。パソコンの index2.html を ひらいてください");
+    toast("このページでは印刷できません。パソコンで index2.html を開いてください");
     return;
   }
   commitRows(); save(); buildPrint();
