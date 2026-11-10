@@ -1,0 +1,18 @@
+{
+  "name": "できたよボード（とけい）",
+  "short_name": "できたよボード",
+  "description": "あさ・よるの やることを、とけいを見ながら じぶんで めくるボード",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#dce9f2",
+  "theme_color": "#dce9f2",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
